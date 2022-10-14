@@ -1,4 +1,4 @@
-# CoinCollectGame
+# Coin Collecting Game
 
 In this game, you move an avatar in a 2 dimensional space and **collect coins**. You must be aware of falling bombs; you'd better shoot them down fast.
 
@@ -10,8 +10,6 @@ After you press **the "START GAME" button**, the game will begin. You can **move
 Pressing **the space bar** will **shoot a laser beam** of sorts which will eliminate the bombs, that is, if you actually hit them.
 
 ## Score and heath points
-
-### Goal
 
 Your goal is to collect as many coins as possible. Move your avatar to the coins using WASD or the arrow keys on your keyboard.
 
