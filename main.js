@@ -114,7 +114,7 @@ function spawnCoin(){
             // new coin is generated after 1 second
             setTimeout(() => {  
                 coinArray.push(new Coin()); 
-            }, 1000); 
+            }, 500); 
         }
     } 
 }
