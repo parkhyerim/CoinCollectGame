@@ -1,175 +1,148 @@
 // Canvas Setup
-/*
-let myGameArea = {
-    canvas: document.getElementById('mainCanvas'),
-    start: function(){
-        this.canvas.width = 800;
-        this.canvas.height = 500;
-        this.ctx = this.canvas.getContext('2d');
-        document.body.appendChild(canvas);
-        this.frameNo = 0;
-    },
-    clear: function(){
-        this.ctx.clearRect(0,0, this.canvas.width, this.canvas.height);
-    }
-}
-*/
 let canvas;
 let ctx;
 canvas = document.getElementById('mainCanvas');
 ctx = canvas.getContext('2d');
 canvas.width = 800;
-canvas.height = 500;
+canvas.height = 600;
 document.body.appendChild(canvas);
 
-// Game
-let playerImage, coinImage, enemyImage, weaponImage, gameOverImage; 
-let gameOver = false;   // if true, game is over
+// Game 
+let player;
+let playerImage, coinImage, enemyImage, laserbeamImage, gameOverImage; 
 let score = 0;
-let health = 10;
+let health = 5;
+let playerSpeed = 6;
 let laserSpeed = 7;
-let enemySpeed = 4;
+let enemySpeed = 2;
+let gameOver = false;  
+let gameStart = false;
 
 // Sound
-const bgMusicSound = document.createElement('audio');
-bgMusicSound.src = 'audio/gamemusic1.mp3';
-const coinSound = document.createElement('audio');
-coinSound.src = 'audio/coin.wav';
-const collisionSound = document.createElement('audio');
-collisionSound.src = 'audio/mine.wav';
+const bgMusicSound = new sound('audio/gamemusic1.mp3');
+const coinSound = new sound('audio/coin.wav');
+const collectSound = new sound('audio/coin.wav');
+const collisionSound = new sound('audio/crash.mp3');
+const laserbeamSound = new sound('audio/laserbeam.wav');
+const gameoverSound = new sound('audio/gameover.wav');
 
+function sound(src){
+    this.sound = document.createElement('audio');
+    this.sound.src = src;
+    this.play = function(){
+        this.sound.play();
+    }
+    this.stop = function(){
+        this.sound.pause();
+    }
+}
 
 // Player
 const playerImgLength = 64;
-let playerX = canvas.width/2 - playerImgLength/2;    // The player's x position - in the center of the game area
-let playerY =canvas.height + playerImgLength;   // The player's y position - on the bottom
-//let playerAlive = true;
-
+let playerXPos = canvas.width/2 - playerImgLength/2;    // The player's x position - in the center of the game area
+let playerYPos = canvas.height + playerImgLength;   // The player's y position - on the bottom
 class Player{
     constructor(){
         this.x =  canvas.width/2 - playerImgLength/2; 
         this.y = canvas.height + playerImgLength; 
-        this.name = "robot";
+        this.speed = playerSpeed;
+        this.canMove = true;
     }
 }
 
 // Coin
 let coinArray = [];
-const coinImgLength = 64;
+let coinExist = false;
 class Coin {
     constructor(){
-        this.x = generateRandomValue(130, canvas.width - coinImgLength); // to make the game UI for score&health visiable
-        this.y = generateRandomValue(80, canvas.height - coinImgLength);
-       // this.collected = false;
+        this.x = generateRandomValue(130, canvas.width - coinImage.imgWidth); // to make the game UI for score&health visiable
+        this.y = generateRandomValue(80, canvas.height - coinImage.imgHeight);
+       /*
+        this.frameX = 0;
+        this.frameY = 0;
+        this.frame = 0;
+        this.spriteWidth = 440/10;
+        this.spriteHeight = 40;
+        */
     }
 }
 
-//Enemy (Bomb)
+//Enemy(Bomb)
 let enemyArray = [];
-let enemyImageLength = 64;
+//let enemyImageLength = 64;
 class Enemy {
     constructor(){
-        this.x = generateRandomValue(0, canvas.width - enemyImageLength);
+        this.x = generateRandomValue(0, canvas.width - enemyImage.imgWidth);
         this.y = 0;
-        enemyArray.push(this);
     }
-
     update(){
         this.y += enemySpeed;
     }
 }
 
 // Laser beam
-let laserList = [];
-let laserImgLength = 64;
+let laserArray = [];
+//let laserImgLength = 64;
 class LaserBeam {
     constructor(){
-        this.x = playerX;
-        this.y = playerY;
+        this.x = playerXPos;
+        this.y = playerYPos;
         this.canUse = false;
-        laserList.push(this);
+        laserArray.push(this);
     }
     
     update(){
-        console.log(keysDown);
         this.y -= laserSpeed;
     }
-}
 
-function checkLaserHit(){
-    /*
-    for(let i=0; laserList.length; i++){
-        for(let j=0; enemyArray.length; j++){
-            //if(laserList[i].x )
-            console.log(laserList[i] + ' ' + enemyArray[j]);
-        }
-      
-    }*/
-}
-/*
-function LaserBeam(){
-    this.x = 0;
-    this.y = 0;
-    this.init = function(){
-        this.x = playerX;   
-        this.y = playerY;
-        this.alive = true;  
-        laserList.push(this);
-    };
-    this.update = function(){
-        console.log(keysDown);
-        this.x -= laserSpeed;
-    };
- 
-    this.checkHit=function(){
-        if(enemyArray.length >0){
-            for(let i=0; enemyArray.length; i++){
-            if(this.y <= enemyArray[i].y && this.x>=enemyArray[i].x &&this.x < enemyArray[i].x+64){
-                score++;
-                this.alive = false;
-                enemyArray.splice(i,1);
+    checkHit(){
+        for(let i=0; i < enemyArray.length; i++){
+            if(Math.abs(this.x - enemyArray[i].x) < enemyImage.imgWidth/2 &&
+                Math.abs(this.y - enemyArray[i].y) < enemyImage.imgHeight/2){
+                  //  console.log("hit enemy");
+                    enemyArray.splice(i,1);
+                    health++;
             }
-        }  
         }
-       
-    };
+    }
 }
-*/
 
 function spawnCoin(){
     if(coinArray.length < 1){
-        coinArray.push(new Coin()); // spawn only one coin
-    }
+        if(!coinExist){
+            coinExist = true;
+            // new coin is generated after 1 second
+            setTimeout(() => {  
+                coinArray.push(new Coin()); 
+            }, 1000); 
+        }
+    } 
+}
 
+function collectCoin(){
     for(let i=0; i < coinArray.length; i++){
-        if(Math.abs(coinArray[i].x - playerX) <= coinImgLength/2 
-        && Math.abs(coinArray[i].y - playerY) <= coinImgLength/2){
-            // console.log("collide with coin");     
-            coinSound.play(); 
+        if(Math.abs(coinArray[i].x - playerXPos) <= coinImage.imgWidth-10 
+        && Math.abs(coinArray[i].y - playerYPos) <= coinImage.imgHeight-10){
+            collectSound.play();
             coinArray.splice(i, 1);
+            coinExist = false;
             score++;        
         }
     }
 }
 
-function checkCollideWithEnemy(){
+function checkBombHit(){
     for(let i=0; i< enemyArray.length; i++){
-        if(Math.abs(enemyArray[i].y - playerY) < enemyImageLength -10 
-        && Math.abs(enemyArray[i].x- playerX) < enemyImageLength -10){
-           // console.log("collide with bomb");
-           collisionSound.play();
-           enemyArray.splice(i,1);
-           health--;       
-        }else if(enemyArray[i].y >= canvas.height - enemyImageLength){
+        if(Math.abs(enemyArray[i].y - playerYPos) < enemyImage.imgWidth -10 
+        && Math.abs(enemyArray[i].x- playerXPos) < enemyImage.imgHeight -10){
             collisionSound.play();
             enemyArray.splice(i,1);
+            health -=2;       
+        }else if(enemyArray[i].y >= canvas.height - enemyImage.imgHeight){  // If bomb touches the ground, the score -1
+            collisionSound.play();
+            enemyArray.splice(i,1);
+            health--;
         }
-    }
-}
-
-function checkScore(){
-    if(score < 0){
-        gameOver = true;
     }
 }
 
@@ -184,64 +157,17 @@ function generateRandomValue(min, max){
     return randomNum;
 }
 
-function loadImage(){
-    playerImage = new Image();
-    playerImage.src = 'img/player.png';
-    coinImage = new Image();
-    coinImage.src = 'img/coin.png';
-    enemyImage = new Image();
-    enemyImage.src = 'img/enemy.png';
-    weaponImage = new Image();
-    weaponImage.src = 'img/weapon.png';
-    gameOverImage = new Image();
-    gameOverImage.src = 'img/gameover.jpg';
-}
-
-
-function  render(){
-    ctx.clearRect(0,0, canvas.width, canvas.height);
-    ctx.drawImage(playerImage,playerX,playerY);
-    ctx.fillText(`Score: ${score}`, 20, 40);
-    ctx.fillText(`Health: ${health}`, 20, 80);
-    ctx.fillStyle = 'black'; 
-    ctx.font = '30px Arial';
-    for(let i = 0; i< laserList.length; i++){
-        if(laserList[i].alive){
-            ctx.drawImage(weaponImage, laserList[i].x, laserList[i].y);
-        }else{
-
-        }
-      
-    }
-
-     for(let i = 0; i< enemyArray.length; i++){
-        ctx.drawImage(enemyImage, enemyArray[i].x, enemyArray[i].y);
-    }
-
-     for(let i = 0; i< coinArray.length; i++){
-        ctx.drawImage(coinImage, coinArray[i].x, coinArray[i].y);
-    }
-}
-
-function main(){
-    if(!gameOver){
-        update();
-        render();
-        requestAnimationFrame(main);
-    }else{
-        ctx.drawImage(gameOverImage, gameOverImage.width-200,100, gameOverImage.width, gameOverImage.height);
-    }  
-}
-
-
 // Keyboard Interaction
 const leftKey = 37;
 const rightKey = 39;
 const upKey = 38;
 const downKey = 40;
 const spaceBar = 32;
+const wKey = 87;
+const aKey = 65;
+const dKey = 68;
+const sKey = 83;
 let keysDown = {};
-let playerSpeed = 2;
 
 function setupKeyboardListener(){
     document.addEventListener('keydown', function(event){
@@ -252,94 +178,164 @@ function setupKeyboardListener(){
         delete keysDown[event.keyCode];
         //console.log('which key:', keysDown);
 
-    if(event.keyCode == spaceBar && score >= 5){
+    if(event.keyCode == spaceBar){
         shootLaserBeam();
-    }
+    } 
     });    
 }
 
 function shootLaserBeam(){
-    console.log("bullt");
-    laserList.push(new LaserBeam());
-   // let b = new LaserBeam();
-   // b.init();
+    laserArray.push(new LaserBeam());
+    laserbeamSound.play();
 }
 
-function createEnemy(){
-   // let randomNum = Math.random() * 10000;
-    const interval = setInterval(function(){
-        let e = new Enemy();
-        //e.init();
-    }, 5000);
+function generateEnemy(){
+    let randomInverval = generateRandomValue(1000, 3000);
+    setInterval(function(){
+        if(gameStart){
+            enemyArray.push(new Enemy());
+        }
+    }, randomInverval);
 }
-
+    
 function update(){
-    // keyboard controll
-    if(leftKey in keysDown){ // to the right
-        playerX -= playerSpeed;
+    // Keyboard controll - the movement of the player
+    if(leftKey in keysDown || aKey in keysDown){ // the left arrow key or the 'a' key: to the right
+        playerXPos -= playerSpeed;
     } 
-    if (rightKey in keysDown){ // to the left
-        playerX += playerSpeed;
+    if (rightKey in keysDown || dKey in keysDown){ // the right arrow key or the 'd' key: to the left
+        playerXPos += playerSpeed;
     }
-    if(upKey in keysDown){ // upwards
-        playerY -= playerSpeed;
+    if(upKey in keysDown || wKey in keysDown){ // the upkey or the 'w' key: upwards
+        playerYPos -= playerSpeed;
     }
-    if(downKey in keysDown){ // downwards
-        playerY += playerSpeed;
-    }
-
-    // Make the player stay only inside the game area
-    if(playerX <= 0){ 
-        playerX = 0;
-    }
-    if(playerX >= canvas.width - playerImgLength){
-        playerX = canvas.width -playerImgLength ;
-    }
-    if(playerY <= 0){
-        playerY = 0;
-    }
-    if(playerY > canvas.height - playerImgLength){
-        playerY = canvas.height - playerImgLength;
+    if(downKey in keysDown || sKey in keysDown){ // the down key or the 's' key: downwards
+        playerYPos += playerSpeed;
     }
 
+    //Ensure that the player stays inside the game area only.
+    if(playerXPos <= 0){ 
+        playerXPos = 0;
+    }
+    if(playerXPos >= canvas.width - playerImgLength){
+        playerXPos = canvas.width -playerImgLength ;
+    }
+    if(playerYPos <= 0){
+        playerYPos = 0;
+    }
+    if(playerYPos > canvas.height - playerImgLength){
+        playerYPos = canvas.height - playerImgLength;
+    }
 
     // Laserbeam update
-    for(let i = 0; i < laserList.length; i++){
-        if(laserList[i].alive){
-            laserList[i].update();
-            laserList[i].checkHit();
+    for(let i = 0; i < laserArray.length; i++){
+        if(laserArray[i]){
+            laserArray[i].update();
+            laserArray[i].checkHit();
         }
     }
 
-    // Coin update - spawning
-    spawnCoin();
-
-    // Enenmy update - movement
+     // Enenmy update - movement
     for(let i=0; i < enemyArray.length; i++){
         enemyArray[i].update();
     }
 
-    checkHealth();
-    checkCollideWithEnemy();
-    checkLaserHit();
-      
+    // Repeated check the game state - coin spawning, player hit the bomb, health
+    spawnCoin();
+    collectCoin();
+    checkBombHit();   
+    checkHealth();     
 }
 
-function playBGMusic(){
-    
+function render(){
+    ctx.clearRect(0,0, canvas.width, canvas.height);    // canvas rendering
+    ctx.drawImage(playerImage.img,playerXPos,playerYPos); // player rendering
+    // gameUI rendering
+    if(gameStart){  
+        ctx.fillText(`Score: ${score}`, 20, 40);
+        ctx.fillText(`Health: ${health}`, 20, 80);
+    }
+    ctx.fillStyle = 'black'; 
+    ctx.font = '30px Arial';
+
+    if(gameStart){
+       // console.log("game start render");
+            // enemy rendering
+    for(let i = 0; i< enemyArray.length; i++){
+        ctx.drawImage(enemyImage.img, enemyArray[i].x, enemyArray[i].y);
+    }
+
+    // coin rendering
+    for(let i = 0; i< coinArray.length; i++){
+        ctx.drawImage(coinImage.img, coinArray[i].x, coinArray[i].y);
+    }
+
+    // laserBeam rendering
+    for(let i = 0; i< laserArray.length; i++){
+        ctx.drawImage(laserbeamImage.img, laserArray[i].x, laserArray[i].y);
+    }
+    }
 }
 
-let player;
+function main(){
+    if(!gameOver){
+        if(gameStart){
+            update();
+        }     
+        render();
+        requestAnimationFrame(main); //  update animation before the next repaint - create loop
+    }else{  // the game is over
+        ctx.drawImage(gameOverImage.img, canvas.width/2-gameOverImage.imgWidth/2, canvas.height/2-gameOverImage.imgHeight/2, gameOverImage.imgWidth, gameOverImage.imgHeight);  // show the gameover message
+        bgMusicSound.stop();
+        gameoverSound.play();
+    }  
+}
+
+function loadImage(){
+    playerImage = new image('img/player.png', 64, 64);
+    coinImage = new image( 'img/coin.png', 64, 64);
+    enemyImage = new image( 'img/enemy.png', 64, 64);
+    laserbeamImage = new image( 'img/weapon.png', 64,64);
+    gameOverImage = new image('img/gameover.jpg', 400, 211);
+}
+
+function image(src, imgWidth, imgHeight){
+    this.img = new Image();
+    this.img.src = src;
+    this.imgWidth = imgWidth;
+    this.imgHeight = imgHeight;
+}
+
+function sound(src){
+    this.sound = document.createElement('audio');
+    this.sound.src = src;
+    this.play = function(){
+        this.sound.play();
+    }
+    this.stop = function(){
+        this.sound.pause();
+    }
+}
+
+// Player clicked the start button
 function startGame(){
-    console.log("start game");
-    //loadImage();
-    player = new Player();
-    console.log(player.name);
+    if(!gameStart){
+        gameStart = true;   
+        let btn = document.getElementById('startBtn');
+        btn.disabled = true;
+        btn.innerText = "Playing";
+        btn.style.backgroundColor = '#C5C5C5'; // grey color
+        bgMusicSound.play();
+        
+    }
 }
+
+// Initiate the game
+function initiateGame(){
+    player = new Player();
+}
+
 loadImage();
 main();
-createEnemy();
-playBGMusic();
-//createCoin();
-//spawnCoin();
+generateEnemy();
 setupKeyboardListener();
