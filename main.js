@@ -14,7 +14,7 @@ let score = 0;
 let health = 5;
 let playerSpeed = 6;
 let laserSpeed = 7;
-let enemySpeed = 2;
+let enemySpeed = 3;
 let gameOver = false;  
 let gameStart = false;
 
@@ -39,14 +39,13 @@ function sound(src){
 
 // Player
 const playerImgLength = 64;
-let playerXPos = canvas.width/2 - playerImgLength/2;    // The player's x position - in the center of the game area
-let playerYPos = canvas.height + playerImgLength;   // The player's y position - on the bottom
+let playerXPos = canvas.width/2 - playerImgLength/2;    // The x position of the player - in the center of the game area
+let playerYPos = canvas.height + playerImgLength;   // The y position og the player - the ground position
 class Player{
     constructor(){
         this.x =  canvas.width/2 - playerImgLength/2; 
         this.y = canvas.height + playerImgLength; 
         this.speed = playerSpeed;
-        this.canMove = true;
     }
 }
 
@@ -55,21 +54,13 @@ let coinArray = [];
 let coinExist = false;
 class Coin {
     constructor(){
-        this.x = generateRandomValue(130, canvas.width - coinImage.imgWidth); // to make the game UI for score&health visiable
+        this.x = generateRandomValue(130, canvas.width - coinImage.imgWidth); // to make the game UI for score & health visiable
         this.y = generateRandomValue(80, canvas.height - coinImage.imgHeight);
-       /*
-        this.frameX = 0;
-        this.frameY = 0;
-        this.frame = 0;
-        this.spriteWidth = 440/10;
-        this.spriteHeight = 40;
-        */
     }
 }
 
 //Enemy(Bomb)
 let enemyArray = [];
-//let enemyImageLength = 64;
 class Enemy {
     constructor(){
         this.x = generateRandomValue(0, canvas.width - enemyImage.imgWidth);
@@ -82,7 +73,6 @@ class Enemy {
 
 // Laser beam
 let laserArray = [];
-//let laserImgLength = 64;
 class LaserBeam {
     constructor(){
         this.x = playerXPos;
@@ -111,7 +101,7 @@ function spawnCoin(){
     if(coinArray.length < 1){
         if(!coinExist){
             coinExist = true;
-            // new coin is generated after 1 second
+            // new coin is generated after 0.5 second
             setTimeout(() => {  
                 coinArray.push(new Coin()); 
             }, 500); 
@@ -138,7 +128,7 @@ function checkBombHit(){
             collisionSound.play();
             enemyArray.splice(i,1);
             health -=2;       
-        }else if(enemyArray[i].y >= canvas.height - enemyImage.imgHeight){  // If bomb touches the ground, the score -1
+        }else if(enemyArray[i].y >= canvas.height - enemyImage.imgHeight){  //  When the bomb touches the ground, the one point is deducted
             collisionSound.play();
             enemyArray.splice(i,1);
             health--;
@@ -190,7 +180,7 @@ function shootLaserBeam(){
 }
 
 function generateEnemy(){
-    let randomInverval = generateRandomValue(1000, 3000);
+    let randomInverval = generateRandomValue(1000, 3000);   //  The bombs are generated every two to three seconds.
     setInterval(function(){
         if(gameStart){
             enemyArray.push(new Enemy());
@@ -240,7 +230,7 @@ function update(){
         enemyArray[i].update();
     }
 
-    // Repeated check the game state - coin spawning, player hit the bomb, health
+    // Repeated game status check - coin spawning, player hits the bomb, health
     spawnCoin();
     collectCoin();
     checkBombHit();   
@@ -259,8 +249,7 @@ function render(){
     ctx.font = '30px Arial';
 
     if(gameStart){
-       // console.log("game start render");
-            // enemy rendering
+     // enemy rendering
     for(let i = 0; i< enemyArray.length; i++){
         ctx.drawImage(enemyImage.img, enemyArray[i].x, enemyArray[i].y);
     }
@@ -325,8 +314,7 @@ function startGame(){
         btn.disabled = true;
         btn.innerText = "Playing";
         btn.style.backgroundColor = '#C5C5C5'; // grey color
-        bgMusicSound.play();
-        
+        bgMusicSound.play();       
     }
 }
 
